@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Brock's Movie Filter</title>
+  <style>
+    :root{
+      --bg:#0f1115;
+      --panel:#171a21;
+      --panel-2:#1f2430;
+      --text:#e8ecf1;
+      --muted:#a9b3c1;
+      --accent:#8fb8ff;
+      --good:#7bd88f;
+      --mid:#ffd166;
+      --bad:#ff7b7b;
+      --border:#2b3240;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+      background:var(--bg);
+      color:var(--text);
+      line-height:1.45;
+    }
+    .wrap{
+      max-width:1100px;
+      margin:0 auto;
+      padding:20px 14px 40px;
+    }
+    h1,h2,h3{margin:0 0 12px}
+    p{margin:0 0 12px;color:var(--muted)}
+    .grid{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:16px;
+    }
+    @media(min-width:900px){
+      .grid{grid-template-columns:420px 1fr;}
+    }
+    .card{
+      background:var(--panel);
+      border:1px solid var(--border);
+      border-radius:16px;
+      padding:16px;
+      box-shadow:0 4px 18px rgba(0,0,0,.2);
+    }
+    label{
+      display:block;
+      font-size:14px;
+      margin:0 0 6px;
+      color:var(--muted);
+    }
+    input, textarea, select{
+      width:100%;
+      padding:12px;
+      border-radius:12px;
+      border:1px solid var(--border);
+      background:var(--panel-2);
+      color:var(--text);
+      font-size:16px;
+      margin-bottom:12px;
+    }
+    textarea{min-height:86px; resize:vertical}
+    .row{
+      display:grid;
+      grid-template-columns:1fr 92px;
+      gap:10px;
+      align-items:end;
+    }
+    .btns{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      margin-top:8px;
+    }
+    button{
+      border:none;
+      border-radius:12px;
+      padding:12px 14px;
+      font-size:15px;
+      cursor:pointer;
+      background:var(--panel-2);
+      color:var(--text);
+      border:1px solid var(--border);
+    }
+    button.primary{
+      background:var(--accent);
+      color:#08111f;
+      font-weight:700;
+      border:none;
+    }
+    button.danger{
+      background:#402126;
+      color:#ffd6d6;
+      border-color:#5c2d35;
+    }
+    .results{
+      display:grid;
+      grid-template-columns:repeat(2,1fr);
+      gap:10px;
+      margin-top:8px;
+    }
+    @media(min-width:700px){
+      .results{grid-template-columns:repeat(4,1fr);}
+    }
+    .metric{
+      background:var(--panel-2);
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:12px;
+    }
+    .metric .k{
+      color:var(--muted);
+      font-size:12px;
+      margin-bottom:4px;
+    }
+    .metric .v{
+      font-size:22px;
+      font-weight:700;
+    }
+    .tier{
+      display:inline-block;
+      padding:8px 10px;
+      border-radius:999px;
+      font-size:13px;
+      font-weight:700;
+      margin-top:8px;
+    }
+    .tier.top{background:rgba(123,216,143,.15); color:var(--good)}
+    .tier.strong{background:rgba(143,184,255,.15); color:var(--accent)}
+    .tier.mixed{background:rgba(255,209,102,.15); color:var(--mid)}
+    .tier.low{background:rgba(255,123,123,.15); color:var(--bad)}
+    .list-head{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:12px;
+    }
+    .search{
+      width:100%;
+      max-width:320px;
+      margin:0;
+    }
+    table{
+      width:100%;
+      border-collapse:collapse;
+      font-size:14px;
+    }
+    th, td{
+      padding:10px 8px;
+      border-bottom:1px solid var(--border);
+      vertical-align:top;
+      text-align:left;
+    }
+    th{color:var(--muted); font-weight:600}
+    .small{font-size:12px; color:var(--muted)}
+    .movie-title{font-weight:700}
+    .actions{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+    .pill{
+      display:inline-block;
+      padding:4px 8px;
+      border-radius:999px;
+      font-size:12px;
+      background:var(--panel-2);
+      border:1px solid var(--border);
+      color:var(--muted);
+    }
+    .help{
+      font-size:13px;
+      color:var(--muted);
+      margin-top:8px;
+    }
+    .footer-note{
+      margin-top:16px;
+      font-size:13px;
+      color:var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Brock’s Movie Filter</h1>
+    <p>
+      Weighted movie ranking tool based on your taste: visual life, atmosphere, trust in the viewer,
+      formal execution, depth/residue, artistic force, intelligence, performance, soul/enchantment,
+      minus message-symbolism penalty.
+    </p>
+
+    <div class="grid">
+      <section class="card">
+        <h2 id="formTitle">Rate a Movie</h2>
+
+        <label for="title">Movie title</label>
+        <input id="title" placeholder="e.g. The Shining" />
+
+        <label for="year">Year (optional)</label>
+        <input id="year" type="number" placeholder="1980" />
+
+        <label for="mode">Mode</label>
+        <select id="mode">
+          <option>Narrative</option>
+          <option>Hybrid</option>
+          <option>Experiential</option>
+          <option>Documentary</option>
+        </select>
+
+        <div class="row">
+          <div>
+            <label for="visualLife">Visual life (0–5)</label>
+            <input id="visualLife" type="number" min="0" max="5" step="0.5" value="4" />
+          </div>
+          <div><span class="small">× 1.0</span></div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label for="atmosphere">Atmosphere (0–5)</label>
+            <input id="atmosphere" type="number" min="0" max="5" step="0.5" value="4" />
+          </div>
+          <div><span class="small">× 1.25</span></div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label for="trustsViewer">Trusts viewer (0–5)</label>
+            <input id="trustsViewer" type="number" min="0" max="5" step="0.5" value="4" />
+          </div>
+          <div><span class="small">× 1.25</span></div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label for="formalExecution">Formal execution (0–5)</label>
+            <input id="formalExecution" type="number" min="0" max="5" step="0.5" value="4" />
+          </div>
+          <div><span class="small">× 1.0</span></div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label for="depthResidue">Depth / residue (0–5)</label>
+            <input id="depthResidue" type="number" min="0" max="5" step="0.5" value="4" />
+          </div>
+          <div><span class="small">× 1.5</span></div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label for="artisticForce">Artistic force (0–5)</label>
+            <input id="artisticForce" type="number" min="0" max="5" step="0.5" value="4" />
+          </div>
+          <div><span class="small">× 1.5</span></div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label for="intelligence">Intelligence (0–5)</label>
+            <input id="intelligence" type="number" min="0" max="5" step="0.5" value="4" />
+          </div>
+          <div><span class="small">× 1.5</span></div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label for="performance">Performance / acting (0–5)</label>
+            <input id="performance" type="number" min="0" max="5" step="0.5" value="4" />
+          </div>
+          <div><span class="small">× 1.0</span></div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label for="soul">Soul / enchantment (0–5)</label>
+            <input id="soul" type="number" min="0" max="5" step="0.5" value="4" />
+          </div>
+          <div><span class="small">× 1.0</span></div>
+        </div>
+
+        <label for="penalty">Message-symbolism penalty (0 to -5)</label>
+        <input id="penalty" type="number" min="-5" max="0" step="0.5" value="0" />
+
+        <label for="notes">Notes</label>
+        <textarea id="notes" placeholder="Why it works or fails for your taste..."></textarea>
+
+        <div class="btns">
+          <button class="primary" id="saveBtn">Save rating</button>
+          <button id="resetBtn">Reset form</button>
+          <button id="exportBtn">Export JSON</button>
+          <button id="exportCsvBtn">Export CSV</button>
+          <button id="importBtn">Import JSON</button>
+          <input id="importFile" type="file" accept=".json,application/json" style="display:none" />
+        </div>
+
+        <div class="results">
+          <div class="metric"><div class="k">Weighted Score</div><div class="v" id="score">0.00</div></div>
+          <div class="metric"><div class="k">Raw Average</div><div class="v" id="avg">0.00</div></div>
+          <div class="metric"><div class="k">Penalty</div><div class="v" id="penaltyView">0</div></div>
+          <div class="metric"><div class="k">Tier</div><div class="v" id="tierText">—</div></div>
+        </div>
+        <div id="tierBadge"></div>
+
+        <p class="help">
+          Tiers are based on your weighted score, not general consensus. Ratings save in your browser on this device.
+        </p>
+      </section>
+
+      <section class="card">
+        <div class="list-head">
+          <div>
+            <h2>Saved Ratings</h2>
+            <div class="small">Sorted by score, highest first.</div>
+          </div>
+          <input id="search" class="search" placeholder="Search saved movies..." />
+        </div>
+
+        <div style="overflow:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Movie</th>
+                <th>Mode</th>
+                <th>Score</th>
+                <th>Tier</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="ratingsBody"></tbody>
+          </table>
+        </div>
+
+        <div class="footer-note">
+          Tip: use Export JSON occasionally so you have a backup.
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = "brock_movie_filter_v1";
+    let editId = null;
+
+    const weights = {
+      visualLife: 1.0,
+      atmosphere: 1.25,
+      trustsViewer: 1.25,
+      formalExecution: 1.0,
+      depthResidue: 1.5,
+      artisticForce: 1.5,
+      intelligence: 1.5,
+      performance: 1.0,
+      soul: 1.0
+    };
+
+    const fields = [
+      "title","year","mode","visualLife","atmosphere","trustsViewer","formalExecution",
+      "depthResidue","artisticForce","intelligence","performance","soul","penalty","notes"
+    ];
+
+    function num(id){
+      return parseFloat(document.getElementById(id).value || 0);
+    }
+
+    function txt(id){
+      return document.getElementById(id).value.trim();
+    }
+
+    function calculate(){
+      const weighted =
+        num("visualLife") * weights.visualLife +
+        num("atmosphere") * weights.atmosphere +
+        num("trustsViewer") * weights.trustsViewer +
+        num("formalExecution") * weights.formalExecution +
+        num("depthResidue") * weights.depthResidue +
+        num("artisticForce") * weights.artisticForce +
+        num("intelligence") * weights.intelligence +
+        num("performance") * weights.performance +
+        num("soul") * weights.soul +
+        num("penalty");
+
+      const avg =
+        (num("visualLife") + num("atmosphere") + num("trustsViewer") + num("formalExecution") +
+        num("depthResidue") + num("artisticForce") + num("intelligence") + num("performance") +
+        num("soul")) / 9;
+
+      const tier = getTier(weighted);
+
+      document.getElementById("score").textContent = weighted.toFixed(2);
+      document.getElementById("avg").textContent = avg.toFixed(2);
+      document.getElementById("penaltyView").textContent = num("penalty").toFixed(1);
+      document.getElementById("tierText").textContent = tier.label;
+
+      const badge = document.getElementById("tierBadge");
+      badge.innerHTML = `<span class="tier ${tier.className}">${tier.label}</span>`;
+
+      return { weighted, avg, tier };
+    }
+
+    function getTier(score){
+      if (score >= 45) return { label: "Top-tier for your taste", className: "top" };
+      if (score >= 38) return { label: "Very strong fit", className: "strong" };
+      if (score >= 30) return { label: "Good / mixed strong", className: "strong" };
+      if (score >= 22) return { label: "Mixed", className: "mixed" };
+      return { label: "Low fit", className: "low" };
+    }
+
+    function getRatings(){
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+      } catch {
+        return [];
+      }
+    }
+
+    function saveRatings(ratings){
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(ratings));
+    }
+
+    function readForm(){
+      const calc = calculate();
+      return {
+        id: editId || crypto.randomUUID(),
+        title: txt("title"),
+        year: txt("year"),
+        mode: txt("mode"),
+        visualLife: num("visualLife"),
+        atmosphere: num("atmosphere"),
+        trustsViewer: num("trustsViewer"),
+        formalExecution: num("formalExecution"),
+        depthResidue: num("depthResidue"),
+        artisticForce: num("artisticForce"),
+        intelligence: num("intelligence"),
+        performance: num("performance"),
+        soul: num("soul"),
+        penalty: num("penalty"),
+        notes: txt("notes"),
+        score: calc.weighted,
+        avg: calc.avg,
+        tier: calc.tier.label,
+        savedAt: new Date().toISOString()
+      };
+    }
+
+    function validate(entry){
+      if (!entry.title) {
+        alert("Please enter a movie title.");
+        return false;
+      }
+      return true;
+    }
+
+    function resetForm(){
+      document.getElementById("formTitle").textContent = "Rate a Movie";
+      editId = null;
+      document.getElementById("title").value = "";
+      document.getElementById("year").value = "";
+      document.getElementById("mode").value = "Narrative";
+      document.getElementById("visualLife").value = 4;
+      document.getElementById("atmosphere").value = 4;
+      document.getElementById("trustsViewer").value = 4;
+      document.getElementById("formalExecution").value = 4;
+      document.getElementById("depthResidue").value = 4;
+      document.getElementById("artisticForce").value = 4;
+      document.getElementById("intelligence").value = 4;
+      document.getElementById("performance").value = 4;
+      document.getElementById("soul").value = 4;
+      document.getElementById("penalty").value = 0;
+      document.getElementById("notes").value = "";
+      calculate();
+    }
+
+    function fillForm(entry){
+      editId = entry.id;
+      document.getElementById("formTitle").textContent = "Edit Rating";
+      fields.forEach(f => {
+        if (document.getElementById(f)) document.getElementById(f).value = entry[f] ?? "";
+      });
+      calculate();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function deleteEntry(id){
+      const ratings = getRatings().filter(r => r.id !== id);
+      saveRatings(ratings);
+      renderRatings();
+      if (editId === id) resetForm();
+    }
+
+    function duplicateEntry(id){
+      const ratings = getRatings();
+      const original = ratings.find(r => r.id === id);
+      if (!original) return;
+      const copy = { ...original, id: crypto.randomUUID(), title: original.title + " (copy)", savedAt: new Date().toISOString() };
+      ratings.push(copy);
+      saveRatings(ratings);
+      renderRatings();
+    }
+
+    function renderRatings(){
+      const q = document.getElementById("search").value.trim().toLowerCase();
+      const body = document.getElementById("ratingsBody");
+      let ratings = getRatings().sort((a,b) => b.score - a.score);
+
+      if (q) {
+        ratings = ratings.filter(r =>
+          (r.title || "").toLowerCase().includes(q) ||
+          (r.notes || "").toLowerCase().includes(q) ||
+          (r.mode || "").toLowerCase().includes(q)
+        );
+      }
+
+      body.innerHTML = "";
+
+      if (!ratings.length){
+        body.innerHTML = `<tr><td colspan="5" class="small">No saved ratings yet.</td></tr>`;
+        return;
+      }
+
+      ratings.forEach(r => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>
+            <div class="movie-title">${escapeHtml(r.title)} ${r.year ? `<span class="small">(${escapeHtml(r.year)})</span>` : ""}</div>
+            ${r.notes ? `<div class="small">${escapeHtml(r.notes).slice(0,160)}</div>` : ""}
+          </td>
+          <td><span class="pill">${escapeHtml(r.mode || "")}</span></td>
+          <td>${Number(r.score).toFixed(2)}</td>
+          <td>${escapeHtml(r.tier || getTier(r.score).label)}</td>
+          <td>
+            <div class="actions">
+              <button data-action="edit" data-id="${r.id}">Edit</button>
+              <button data-action="dup" data-id="${r.id}">Duplicate</button>
+              <button class="danger" data-action="del" data-id="${r.id}">Delete</button>
+            </div>
+          </td>
+        `;
+        body.appendChild(tr);
+      });
+    }
+
+    function escapeHtml(str){
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function exportJson(){
+      const data = JSON.stringify(getRatings(), null, 2);
+      downloadFile("brock-movie-filter-ratings.json", data, "application/json");
+    }
+
+    function exportCsv(){
+      const ratings = getRatings();
+      const cols = ["title","year","mode","score","tier","visualLife","atmosphere","trustsViewer","formalExecution","depthResidue","artisticForce","intelligence","performance","soul","penalty","notes"];
+      const rows = [
+        cols.join(","),
+        ...ratings.map(r => cols.map(c => csvEscape(r[c] ?? "")).join(","))
+      ];
+      downloadFile("brock-movie-filter-ratings.csv", rows.join("\n"), "text/csv");
+    }
+
+    function csvEscape(v){
+      const s = String(v).replace(/"/g, '""');
+      return `"${s}"`;
+    }
+
+    function downloadFile(filename, content, type){
+      const blob = new Blob([content], { type });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function importJson(file){
+      const reader = new FileReader();
+      reader.onload = e => {
+        try {
+          const imported = JSON.parse(e.target.result);
+          if (!Array.isArray(imported)) throw new Error("Invalid JSON");
+          saveRatings(imported);
+          renderRatings();
+          alert("Import complete.");
+        } catch {
+          alert("That file could not be imported.");
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    document.querySelectorAll("input, textarea, select").forEach(el => {
+      if (el.id !== "search" && el.id !== "importFile") {
+        el.addEventListener("input", calculate);
+      }
+    });
+
+    document.getElementById("saveBtn").addEventListener("click", () => {
+      const entry = readForm();
+      if (!validate(entry)) return;
+
+      const ratings = getRatings();
+      const idx = ratings.findIndex(r => r.id === entry.id);
+      if (idx >= 0) ratings[idx] = entry;
+      else ratings.push(entry);
+
+      saveRatings(ratings);
+      renderRatings();
+      resetForm();
+    });
+
+    document.getElementById("resetBtn").addEventListener("click", resetForm);
+    document.getElementById("search").addEventListener("input", renderRatings);
+    document.getElementById("exportBtn").addEventListener("click", exportJson);
+    document.getElementById("exportCsvBtn").addEventListener("click", exportCsv);
+
+    document.getElementById("importBtn").addEventListener("click", () => {
+      document.getElementById("importFile").click();
+    });
+
+    document.getElementById("importFile").addEventListener("change", e => {
+      const file = e.target.files[0];
+      if (file) importJson(file);
+      e.target.value = "";
+    });
+
+    document.getElementById("ratingsBody").addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-action]");
+      if (!btn) return;
+      const id = btn.dataset.id;
+      const action = btn.dataset.action;
+      const ratings = getRatings();
+      const entry = ratings.find(r => r.id === id);
+      if (!entry) return;
+
+      if (action === "edit") fillForm(entry);
+      if (action === "dup") duplicateEntry(id);
+      if (action === "del") {
+        if (confirm(`Delete "${entry.title}"?`)) deleteEntry(id);
+      }
+    });
+
+    resetForm();
+    renderRatings();
+  </script>
+</body>
+</html>
